@@ -102,7 +102,44 @@ function update(req, res) {
   };
   res.json({ data: res.locals.order });
 }
+function orderIdCheck(req, res, next){
+  const { orderId } = req.params;
+  const { data: { id, status } = {} } = req.body;
+  // check if id of body does not match :orderId from the route
+  if (id && id !== orderId) {
+    return next({
+      status: 400,
+      message: `Order id does not match route id. Order: ${id}, Route: ${orderId}`,
+    });
+    
+}
+next()
+}
+function statusCheck(req, res, next){
+  const { data: { status } = {} } = req.body;
+  if (
+    !status ||
+    status === "" ||
+    (status !== "pending" &&
+      status !== "preparing" &&
+      status !== "out-for-delivery")
+  ) {
+    return next({
+      status: 400,
+      message:
+        "Order must have a status of pending, preparing, out-for-delivery, delivered",
+    });
+  }
+  if (status === "delivered") {
+    return next({
+      status: 400,
+      message: "A delivered order cannot be changed",
+    });
 
+}
+next();
+}
+/*
 // validate status
 function statusCheck(req, res, next) {
   const { orderId } = req.params;
@@ -137,6 +174,7 @@ function statusCheck(req, res, next) {
   }
   next();
 }
+*/
 
 // DELETE /orders/:orderId
 function destroy(req, res) {
@@ -161,6 +199,6 @@ module.exports = {
   list,
   create: [orderBody, create],
   read: [orderExist, read],
-  update: [orderBody, orderExist, statusCheck, update],
+  update: [orderBody, orderExist, orderIdCheck,statusCheck, update],
   delete: [orderExist, destroyCheck, destroy],
 };
